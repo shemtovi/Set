@@ -1,7 +1,9 @@
 package bguspl.set.ex;
 
+import bguspl.set.Config;
 import bguspl.set.Env;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -42,15 +44,17 @@ public class Dealer implements Runnable {
         this.table = table;
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
-    }
+    }        
 
     /**
      * The dealer thread starts here (main loop for the dealer thread).
      */
+    
     @Override
     public void run() {
         System.out.printf("Info: Thread %s starting.%n", Thread.currentThread().getName());
         while (!shouldFinish()) {
+            Collections.shuffle(deck);
             placeCardsOnTable();
             timerLoop();
             updateTimerDisplay(false);
@@ -99,6 +103,20 @@ public class Dealer implements Runnable {
      * Check if any cards can be removed from the deck and placed on the table.
      */
     private void placeCardsOnTable() {
+        if(table.countCards() != env.config.tableSize && !deck.isEmpty()){
+            for(int i =0 ;i < env.config.tableSize ;i++){
+                if(table.slotToCard[i] == null){
+                    if(!deck.isEmpty())
+                        table.placeCard(deck.remove(0), i);
+                }
+                
+            }
+        }
+        for(int i =0 ;i < env.config.tableSize ;i++){
+            table.placeCard(deck.remove(i), i);
+        }
+        
+    
         // TODO implement
     }
 
