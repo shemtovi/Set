@@ -1,5 +1,9 @@
 package bguspl.set.ex;
 
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import bguspl.set.Env;
 
 /**
@@ -50,6 +54,12 @@ public class Player implements Runnable {
      */
     private int score;
 
+    private Dealer dealer;
+
+    private Queue <Integer> queue;
+
+    AtomicInteger numOfTokens =  new AtomicInteger();
+
     /**
      * The class constructor.
      *
@@ -64,6 +74,7 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
+        this.dealer = dealer;
     }
 
     /**
@@ -74,9 +85,23 @@ public class Player implements Runnable {
         playerThread = Thread.currentThread();
         System.out.printf("Info: Thread %s starting.%n", Thread.currentThread().getName());
         if (!human) createArtificialIntelligence();
-
+        //playerThread.wait
         while (!terminate) {
             // TODO implement main player loop
+            if(numOfTokens.get() >= env.config.featureSize){
+                //if player need to wait to the dealer to check if set is leagal
+                try{wait();}
+                catch(InterruptedException ignore){}
+            } 
+            while(!queue.isEmpty()){
+                int slot = queue.remove();
+                if(table.hasToken(id,slot))
+                    table.removeToken(id, slot);
+                else
+                    table.placeToken(id, slot);    
+            }
+
+            
         }
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         System.out.printf("Info: Thread %s terminated.%n", Thread.currentThread().getName());

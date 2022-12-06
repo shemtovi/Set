@@ -2,9 +2,13 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+import java.util.AbstractSet;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +33,8 @@ public class Table {
      */
     protected final Integer[] cardToSlot; // slot per card (if any)
 
+    protected final Set<Integer>[] tokenBoard;
+
     /**
      * Constructor for testing.
      *
@@ -41,6 +47,10 @@ public class Table {
         this.env = env;
         this.slotToCard = slotToCard;
         this.cardToSlot = cardToSlot;
+        tokenBoard = new Set[env.config.tableSize];
+        for(int i = 0; i< env.config.tableSize ; i++){
+            tokenBoard[i] = new HashSet<Integer>();   
+        }
     }
 
     /**
@@ -117,7 +127,7 @@ public class Table {
      * @param slot   - the slot on which to place the token.
      */
     public void placeToken(int player, int slot) {
-        // TODO implement
+        tokenBoard[slot].add(player);
     }
 
     /**
@@ -127,7 +137,11 @@ public class Table {
      * @return       - true iff a token was successfully removed.
      */
     public boolean removeToken(int player, int slot) {
-        // TODO implement
-        return false;
+        return tokenBoard[slot].remove(player);
+    }
+    
+    //need to check i addd the int slot to parameter
+    public boolean hasToken(int player, int slot){
+        return tokenBoard[slot].contains(player);
     }
 }

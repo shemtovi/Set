@@ -5,6 +5,8 @@ import bguspl.set.Env;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -38,12 +40,18 @@ public class Dealer implements Runnable {
      * The time when the dealer needs to reshuffle the deck due to turn timeout.
      */
     private long reshuffleTime = Long.MAX_VALUE;
+    //helping verify correcntess of set
+    AtomicInteger  senNum = new AtomicInteger();
+    int[] lastSet;
+    //The set testing queue of the dealer
+    Queue<int[]> queue;
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
+        lastSet = new int[env.config.featureSize + 1];
     }        
 
     /**
@@ -53,9 +61,13 @@ public class Dealer implements Runnable {
     @Override
     public void run() {
         System.out.printf("Info: Thread %s starting.%n", Thread.currentThread().getName());
+        //env.ui.setCountdown(env.config.turnTimeoutMillis,false);
+        reshuffleTime = System.currentTimeMillis() + env.config.turnTimeoutMillis ;
+        //start players treade
         while (!shouldFinish()) {
             Collections.shuffle(deck);
             placeCardsOnTable();
+            //players notifyall
             timerLoop();
             updateTimerDisplay(false);
             removeAllCardsFromTable();
@@ -73,7 +85,11 @@ public class Dealer implements Runnable {
             updateTimerDisplay(false);
             removeCardsFromTable();
             placeCardsOnTable();
+            
         }
+        //players wait
+        //Tokens counter + queue resets
+        
     }
 
     /**
@@ -93,8 +109,9 @@ public class Dealer implements Runnable {
     }
 
     /**
-     * Checks if any cards should be removed from the table and returns them to the deck.
+     * Checks if any cards should be removed from the table.
      */
+    //synchronize
     private void removeCardsFromTable() {
         // TODO implement
     }
@@ -106,17 +123,19 @@ public class Dealer implements Runnable {
         if(table.countCards() != env.config.tableSize && !deck.isEmpty()){
             for(int i =0 ;i < env.config.tableSize ;i++){
                 if(table.slotToCard[i] == null){
-                    if(!deck.isEmpty())
+                    if(!deck.isEmpty()){
+                        try {
+                            Thread.currentThread().sleep(100);
+                        } catch (InterruptedException ignored) {}
                         table.placeCard(deck.remove(0), i);
+
+                    }
+
+                       
                 }
                 
             }
         }
-        for(int i =0 ;i < env.config.tableSize ;i++){
-            table.placeCard(deck.remove(i), i);
-        }
-        
-    
         // TODO implement
     }
 
@@ -129,9 +148,13 @@ public class Dealer implements Runnable {
 
     /**
      * Reset and/or update the countdown and the countdown display.
+     * false if need to update the countdoun
+     * true if needed to reset the timer (60 seconds in our game)
      */
     private void updateTimerDisplay(boolean reset) {
         // TODO implement
+        env.ui.setCountdown( reshuffleTime- System.currentTimeMillis(), reset);
+
     }
 
     /**
